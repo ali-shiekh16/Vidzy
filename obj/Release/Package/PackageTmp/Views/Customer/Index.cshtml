@@ -1,0 +1,75 @@
+﻿
+@{
+    ViewBag.Title = "Customers";
+}
+
+<h2>Customers</h2>
+
+@Html.ActionLink("Add Customer", "New", null, new { @class = "btn btn-primary" })
+
+<br />
+<br />
+
+
+    <table class="table table-hover table-bordered" id="customer-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Membership Type</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        </tbody>
+    </table>
+
+
+@section scripts{
+    <script>
+        $(document).ready(function () {
+            var table = $("#customer-table").DataTable({
+                ajax: {
+                    url: '/api/Customers',
+                    dataSrc: ''
+                },
+                columns: [
+                    {
+                        data: "name",
+                        render: function (data, type, row) {
+                            return "<a href='/Customer/Edit/" + row.id + "'>"+ data +"</a>";
+                        }
+                    },
+                    {
+                        data: "membershipType.name"
+                    },
+                    {
+                        data: "id",
+                        render: function (data) {
+                            return "<button class='btn btn-link js-delete' data-customer-id='" + data + "'>Delete</button>";
+                        }
+                    }
+                ]
+            });
+
+            $("#customer-table").on("click",".js-delete", function () {
+                var button = $(this);
+                bootbox.confirm("Are you sure you want to delete?", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: "/api/Customers/" + button.attr("data-customer-id"),
+                            type: "DELETE",
+                            success: function () {
+                                table.row(button.parents("tr")).remove().draw();
+                                toastr.success("Customer deleted successfully.");
+                            },
+                            error: function () {
+                                toastr.error("Customer couldn't be deleted, An internal error occured!");
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

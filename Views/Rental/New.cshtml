@@ -1,0 +1,128 @@
+﻿
+@{
+    ViewBag.Title = "New Rental";
+}
+
+<h2>New Rental</h2>
+
+<form>
+    <div class="form-group">
+        <label>Customer</label>
+        <div class="position-relative">
+            <input type="text" id="customers" name="customers" data-rule-validateCustomer="true" required class="form-control" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Movie</label>
+        <div class="position-relative">
+            <input type="text" id="movies" name="movies" data-rule-validateMovie="true" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row">
+        <ul class="list-group col-sm-4 col-md-4" id="moviesList">
+        </ul>
+    </div>
+
+    <br />
+
+    <div class="form-group">
+        <button class="btn btn-primary">Add Rental</button>
+    </div>
+
+</form>
+
+@section scripts{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var vm = {
+                movieIds: []
+            };
+
+            var customers = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    url: '/api/customers?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+
+            $('#customers').typeahead({
+                highlight: true,
+                mineLength: 3
+            }, {
+                name: 'customers',
+                display: 'name',
+                source: customers
+            }).on("typeahead:select", function (e, customer) {
+                vm.customerId = customer.id
+                vm.customerName = customer.name;
+            });
+
+            var movies = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    url: '/api/movies?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+
+            $('#movies').typeahead({
+                highlight: true,
+                mineLength: 3
+            }, {
+                name: 'movies',
+                display: 'name',
+                source: movies
+            }).on("typeahead:select", function (e, movie) {
+                $("#moviesList").append("<li class='list-group-item'>" + movie.name + "</li>");
+
+                $('#movies').typeahead("val", "");
+
+                vm.movieIds.push(movie.id);
+            });
+
+            $.validator.addMethod("validateCustomer", function () {
+                return vm.hasOwnProperty("customerId") && vm.customerId !== 0
+            }, "Please select a valid customer");
+
+            $.validator.addMethod("validateMovie", function () {
+                return vm.movieIds.length > 0;
+            }, "Please select at least one movie.");
+
+            var validator = $('form').validate({
+                submitHandler: function () {
+
+                    $.ajax({
+                        url: '/api/rentals',
+                        method: 'post',
+                        data: vm
+                    })
+                        .done(function () {
+                            toastr.success("Rental Added")
+
+                            vm.movieIds.length = 0;
+                            vm.customerId = 0;
+
+                            $('#movies').empty();
+
+                            $('form').typeahead("val", "");
+
+                            validator.resetForm();
+                        })
+                        .fail(function () {
+                            toastr.error("Something went wrong!")
+                        })
+                    return false;
+                }
+            })
+
+        });
+
+    </script>
+}

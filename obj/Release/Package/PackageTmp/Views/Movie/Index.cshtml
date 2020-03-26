@@ -1,0 +1,78 @@
+﻿
+@{
+    ViewBag.Title = "Movies";
+}
+
+<h2>Movie</h2>
+
+
+@Html.ActionLink("Add Movie", "New", null,
+    new
+    {
+        @class = "btn btn-primary"
+})
+
+<br />
+<br />
+
+
+    <table class="table table-hover table-bordered" id="movie-table">
+        <thead>
+            <tr>
+                <th>Movie</th>
+                <th>Genre</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+@section scripts{
+    <script> 
+        $(document).ready(function () {
+            var table = $("#movie-table").DataTable({
+                ajax: {
+                    url: "/api/Movies",
+                    dataSrc: ''
+                },
+                columns: [
+                    {
+                        data: "name",
+                        render: function (data, type, row) {
+                            return "<a class='btn btn-link' href='/Movie/Edit/" + row.id + "'>" + data + "</a>"; 
+                        }
+                    },
+                    {
+                        data: "genre.name"
+                    },
+                    {
+                        data: "id",
+                        render: function (data) {
+                            return "<button class='btn btn-link js-delete' data-movie-id='" + data + "'>Delete</button>";
+                        }
+                    }
+                ]
+            });
+
+            $("#movie-table").on("click", ".js-delete", function () {
+                var button = $(this);
+                bootbox.confirm("Are you sure you want to delete?", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: "/api/movies/" + button.attr("data-movie-id"),
+                            type: "DELETE",
+                            success: function () {
+                                toastr.success("Movie deleted successfully.");
+                                table.row(button.parents("tr")).remove().draw();
+                            },
+                            error: function () {
+                                toastr.error("Customer couldn't delted an internal error occured!");
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}
